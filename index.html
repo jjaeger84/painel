@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Portfólio de Investimentos</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117; --bg2: #161b22; --card: #1c2128; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e;
+      --green: #3fb950; --red: #f85149; --blue: #58a6ff;
+      --gold: #d29922; --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-left h1 { font-size: 17px; font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .update-info { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .btn { background: #238636; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: opacity .2s; }
+    .btn:hover { opacity: .8; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .kpi-value { font-size: 24px; font-weight: 700; line-height: 1; }
+    .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    .kpi-change { font-size: 13px; font-weight: 600; margin-top: 4px; }
+
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media(max-width:700px){ .charts { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .chart-card h3 { font-size: 14px; margin-bottom: 3px; }
+    .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+    .chart-wrap { position: relative; height: 210px; }
+
+    .section-head { display: flex; align-items: center; gap: 10px; margin: 30px 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .section-head h2 { font-size: 15px; font-weight: 600; }
+    .badge { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 2px 10px; font-size: 11px; color: var(--muted); }
+    .section-total { margin-left: auto; font-size: 15px; font-weight: 700; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+
+    .acard { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; overflow: hidden; transition: border-color .2s; }
+    .acard:hover { border-color: var(--blue); }
+    .acard::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:12px 12px 0 0; }
+    .acard.pos::before { background: var(--green); }
+    .acard.neg::before { background: var(--red); }
+    .acard.neu::before { background: var(--border); }
+
+    .acard-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .ticker { font-size: 19px; font-weight: 700; }
+    .aname { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .broker-tag { font-size: 10px; color: var(--muted); background: var(--bg2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+
+    .tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
+    .tipo-acao   { background: rgba(63,185,80,.15);  color: var(--green);  }
+    .tipo-etf    { background: rgba(88,166,255,.15); color: var(--blue);   }
+    .tipo-cripto { background: rgba(210,153,34,.15); color: var(--gold);   }
+    .tipo-cdb    { background: rgba(188,140,255,.15);color: var(--purple); }
+
+    .rows { display: flex; flex-direction: column; gap: 7px; }
+    .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .rlabel { color: var(--muted); }
+    .rval { font-weight: 500; }
+
+    .rendimento { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .rendimento-label { font-size: 11px; color: var(--muted); }
+    .rendimento-sub { font-size: 12px; color: var(--muted); }
+    .rendimento-val { font-size: 16px; font-weight: 700; }
+
+    .tip { margin-top: 10px; font-size: 11px; color: var(--muted); line-height: 1.45; }
+    .live-badge { font-size: 9px; background: rgba(63,185,80,.15); color: var(--green); border-radius: 4px; padding: 1px 5px; vertical-align: middle; margin-left: 4px; }
+    .bcb-badge  { font-size: 9px; background: rgba(188,140,255,.15); color: var(--purple); border-radius: 4px; padding: 1px 5px; vertical-align: middle; margin-left: 4px; }
+
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
+    .info-box { background: rgba(88,166,255,.07); border: 1px solid rgba(88,166,255,.18); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+    .info-box strong { color: var(--blue); }
+
+    .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .chart-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .ctabs { display: flex; gap: 4px; margin-bottom: 6px; align-items: center; }
+    .cchg  { font-size: 11px; font-weight: 600; margin-right: auto; }
+    .ctab  { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: all .15s; }
+    .ctab.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .ctab:hover:not(.on) { border-color: var(--blue); color: var(--blue); }
+    .cmini { height: 72px; position: relative; }
+
+    /* CDB projections bar */
+    .cdb-proj { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); }
+    .cdb-proj-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .cdb-proj-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+    .cdb-proj-label { color: var(--muted); }
+    .cdb-proj-val { font-weight: 600; color: var(--purple); }
+    .cdb-taxa-bar { margin-top: 10px; background: var(--bg); border-radius: 4px; height: 5px; overflow: hidden; }
+    .cdb-taxa-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--blue)); border-radius: 4px; transition: width .5s; }
+
+    footer { margin-top: 48px; padding: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: 12px; line-height: 1.7; }
+
+    @media(max-width:600px){ .grid{grid-template-columns:1fr} .header-left h1{font-size:14px} .kpi-value{font-size:20px} }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:20px">📊</span>
+    <h1>Meu Portfólio de Investimentos</h1>
+  </div>
+  <div class="header-right">
+    <span class="update-info"><span class="dot"></span> Preços: <span id="ts">--:--</span> &nbsp;|&nbsp; Ações/CDB: <span id="ts-prices">aguardando</span></span>
+    <button class="btn" onclick="init()">⟳ Atualizar</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="summary">
+    <div class="kpi">
+      <div class="kpi-label">💰 Patrimônio Total</div>
+      <div class="kpi-value" id="kpi-total"><span class="spin"></span></div>
+      <div class="kpi-sub">Todos os investimentos em BRL</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">📈 Renda Variável</div>
+      <div class="kpi-value" id="kpi-rv"><span class="spin"></span></div>
+      <div class="kpi-sub">Ações, ETFs e Cripto</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">🏦 Renda Fixa</div>
+      <div class="kpi-value" id="kpi-rf"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-rf-sub">CDB-DI · buscando taxa CDI...</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">💵 Dólar (USD/BRL)</div>
+      <div class="kpi-value" id="kpi-usd"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-usd-sub">buscando cotação…</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">🇧🇷 Ganho/Perda Brasil</div>
+      <div class="kpi-value" id="kpi-ganho-br"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-ganho-br-sub">B3 — sem posições ativas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">🇺🇸 Ganho/Perda Avenue</div>
+      <div class="kpi-value" id="kpi-ganho-av"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-ganho-av-sub">Ações + ETFs + UCITS</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">🛂 Limite EUA (herança)</div>
+      <div class="kpi-value" id="kpi-limite"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-limite-sub">Ações + ETFs americanos (UCITS fora)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">🎯 Gatilho do plano</div>
+      <div class="kpi-value" id="kpi-gatilho"><span class="spin"></span></div>
+      <div class="kpi-sub" id="kpi-gatilho-sub">S&amp;P 500 vs topo (−10% antecipa · −20% tudo)</div>
+    </div>
+  </div>
+  <div class="info-box" id="aviso-dados" style="display:none"></div>
+  <div class="info-box" id="eficiencia" style="display:none"></div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Alocação por Tipo de Investimento</h3>
+      <p class="chart-sub">Como seu dinheiro está distribuído entre as classes de ativos</p>
+      <div class="chart-wrap"><canvas id="chartTipo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Alocação por Corretora</h3>
+      <p class="chart-sub">Distribuição do patrimônio entre as corretoras</p>
+      <div class="chart-wrap"><canvas id="chartCorr"></canvas></div>
+    </div>
+  </div>
+
+  <!-- BRASIL -->
+  <div class="section-head">
+    <span style="font-size:18px">🇧🇷</span>
+    <h2>Ações e ETFs — Brasil (B3)</h2>
+    <span class="badge">confirmar posições</span>
+    <span class="section-total" id="tot-br">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> Ações são pequenas partes de uma empresa. Quem compra vira sócio e lucra quando a empresa vai bem. ETFs são como "caixinhas" que reúnem várias ações — você compra uma cota e investe em muitas empresas ao mesmo tempo. O <strong>Preço Médio</strong> é quanto você pagou por cada cota, na média das suas compras.
+  </div>
+  <div class="grid" id="grid-br"></div>
+
+  <!-- AVENUE AÇÕES -->
+  <div class="section-head">
+    <span style="font-size:18px">🇺🇸</span>
+    <h2>Ações — Estados Unidos (Avenue)</h2>
+    <span class="badge" id="badge-ac">—</span>
+    <span class="section-total" id="tot-av-ac">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> Ações de empresas americanas negociadas em dólar na bolsa dos EUA. Os valores são calculados em tempo real: <strong>quantidade × preço atual</strong>, convertidos pelo câmbio do momento. O retorno mostra o ganho ou perda desde a sua compra.
+  </div>
+  <div class="grid" id="grid-av-ac"></div>
+
+  <!-- AVENUE ETFs -->
+  <div class="section-head">
+    <span style="font-size:18px">📦</span>
+    <h2>ETFs — Estados Unidos (Avenue)</h2>
+    <span class="badge" id="badge-etf">—</span>
+    <span class="section-total" id="tot-av-etf">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> ETFs americanos funcionam igual aos brasileiros: uma cota = exposição a dezenas de empresas. O <strong>VOO</strong> replica as 500 maiores dos EUA, o <strong>QQQ</strong> replica a NASDAQ. Valores calculados em tempo real: <strong>quantidade × preço atual × câmbio</strong>.
+  </div>
+  <div class="grid" id="grid-av-etf"></div>
+
+  <!-- AVENUE UCITS -->
+  <div class="section-head">
+    <span style="font-size:18px">🇮🇪</span>
+    <h2>UCITS — Irlanda (Avenue)</h2>
+    <span class="badge" id="badge-ucits">—</span>
+    <span class="section-total" id="tot-av-ucits">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> ETFs domiciliados na Irlanda e negociados em Londres, em dólar. Pagam menos imposto sobre dividendos americanos e <strong>não entram no limite de US$ 60 mil</strong> do imposto sobre herança dos EUA. Por isso, todos os novos aportes vão para cá.
+  </div>
+  <div class="grid" id="grid-av-ucits"></div>
+
+  <!-- SWING -->
+  <div class="section-head">
+    <span style="font-size:18px">🔁</span>
+    <h2>Swing trade — sinais e operações</h2>
+    <span class="badge">dados diários · atraso de até 1h</span>
+  </div>
+  <div class="info-box">
+    <strong>Como ler:</strong> sinais técnicos gerados pelo monitor (recuo em tendência de alta ou rompimento com volume). Cada sinal traz entrada, <strong>stop</strong> (onde sair se der errado), alvo e tamanho para arriscar no máximo 1% do caixa de swing. É informação, não recomendação. Confira o preço na Avenue antes de comprar.
+  </div>
+  <div class="grid" id="grid-swing"></div>
+
+  <!-- RENDA FIXA -->
+  <div class="section-head">
+    <span style="font-size:18px">🏛️</span>
+    <h2>Renda Fixa</h2>
+    <span class="badge">Itaú · Santander · Neon</span>
+    <span class="section-total" id="tot-rf">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> Renda fixa é como um empréstimo que você faz ao banco — em troca, ele paga juros. O <strong>CDB-DI</strong> rende conforme o CDI (taxa próxima à Selic). É mais seguro que ações pois a rentabilidade é previsível. Protegido pelo <strong>FGC</strong> até R$ 250 mil por instituição.
+  </div>
+  <div class="grid" id="grid-rf"></div>
+
+  <!-- CRIPTO -->
+  <div class="section-head">
+    <span style="font-size:18px">₿</span>
+    <h2>Criptomoedas</h2>
+    <span class="badge">Itaú/íon · variação desde 13/10</span>
+    <span class="section-total" id="tot-crypto">---</span>
+  </div>
+  <div class="info-box">
+    <strong>O que é isso?</strong> Criptomoedas são moedas digitais descentralizadas (sem banco central). O <strong>Bitcoin (BTC)</strong> é o mais famoso e serve como reserva de valor digital. O <strong>Ethereum (ETH)</strong> é uma plataforma de contratos inteligentes. São ativos de <strong>alto risco</strong> — podem oscilar muito em um único dia.
+  </div>
+  <div class="grid" id="grid-crypto"></div>
+
+</div>
+
+<footer>
+  <p>📡 Preços: Yahoo Finance via GitHub Actions (EUA, Londres e B3) · CoinGecko (cripto) · câmbio: Yahoo → AwesomeAPI → PTAX do Banco Central · CDI: Banco Central</p>
+  <p>Atualização automática a cada 60 segundos · Valores em BRL convertidos pela cotação atual do USD</p>
+  <p style="margin-top:8px;font-size:11px;">Dashboard para acompanhamento pessoal — não constitui recomendação de investimento.</p>
+</footer>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const DATA = { brasil: [], rendaFixa: [], crypto: [], avenue: { acoes: [], etfs: [], ucits: [] } };
+let pricesMeta = {};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let brPrices     = {};
+let usPrices     = {};
+let cryptoPrices = {};
+let usdBrl       = null;   // só valor real vindo do prices.json
+let cdiAnual     = null;   // taxa CDI anual em % — buscada do BCB
+let charts       = {};
+let historyData  = {};
+const cardCharts = {};
+const allHist    = {};
+let cryptoHist   = {};
+let lastCryptoHistFetch = 0;
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+const R  = n => n != null ? 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '---';
+const D  = n => n != null ? '$ '  + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '---';
+const P  = n => n != null ? (n>=0?'+':'')+n.toFixed(2)+'%' : '---';
+const cls = n => n >= 0 ? 'pos' : 'neg';
+const spin = () => '<span class="spin"></span>';
+
+// Calcula quantos dias úteis entre duas datas (aproximação simples sem feriados)
+function diasUteisEntre(dataInicio, dataFim) {
+  let count = 0;
+  const d = new Date(dataInicio);
+  while (d <= dataFim) {
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+// Calcula valor atualizado do CDB dado taxa CDI anual e dias úteis
+function calcCDB(valorBase, cdiPct, diasUteis) {
+  if (!cdiPct || diasUteis <= 0) return valorBase;
+  // Converte taxa anual (252 dias úteis) para diária: (1 + taxa_anual)^(1/252) - 1
+  const taxaDiaria = Math.pow(1 + cdiPct / 100, 1 / 252) - 1;
+  return valorBase * Math.pow(1 + taxaDiaria, diasUteis);
+}
+
+// ── APIs ──────────────────────────────────────────────────────────────────────
+
+// Busca taxa SELIC/CDI atual do Banco Central do Brasil
+async function fetchCDI() {
+  try {
+    // Série 11 = CDI diário (% a.d.) — pegamos os últimos 10 dias e usamos o mais recente
+    const r = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados/ultimos/10?formato=json');
+    const d = await r.json();
+    if (!Array.isArray(d) || !d.length) throw new Error('vazio');
+    // Taxa CDI diária do último dia útil disponível
+    const taxaDiaria = parseFloat(String(d[d.length - 1].valor).replace(',', '.'));
+    // Converte para anual: (1 + taxaDiaria/100)^252 - 1
+    cdiAnual = (Math.pow(1 + taxaDiaria / 100, 252) - 1) * 100;
+    console.log(`CDI diário: ${taxaDiaria}% | CDI anual: ${cdiAnual.toFixed(2)}%`);
+  } catch(e) {
+    console.warn('BCB CDI erro:', e);
+    cdiAnual = null;   // sem dado real, não inventa
+  }
+}
+
+// ── Painel cifrado: prices.enc só abre com a senha do Jonas (AES-256-GCM, chave PBKDF2-SHA256) ──
+const b64u8 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decifrar(enc, senha) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']);
+  const chave = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: b64u8(enc.salt), iterations: enc.it, hash: 'SHA-256'},
+                                              base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: b64u8(enc.iv)}, chave, b64u8(enc.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+let senhaPainel = lsGet('painel_senha');
+function pedirSenha(erro) {
+  return new Promise(ok => {
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);padding:16px';
+    box.innerHTML = `<form style="background:#161b22;color:#e6edf3;padding:24px;border-radius:12px;width:100%;max-width:340px;font-family:inherit">
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px">🔒 Painel protegido</div>
+      <div style="font-size:13px;opacity:.75;margin-bottom:14px">${erro ? '❌ Senha errada. Tente de novo.' : 'Digite a senha do painel.'}</div>
+      <input type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:16px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:12px 0"><input type="checkbox"> Lembrar neste aparelho</label>
+      <button style="width:100%;padding:10px;border:0;border-radius:8px;background:#238636;color:#fff;font-size:15px;font-weight:600">Abrir</button></form>`;
+    document.body.appendChild(box);
+    const f = box.querySelector('form'); f.querySelector('input[type=password]').focus();
+    f.onsubmit = ev => { ev.preventDefault(); const v = f.querySelector('input[type=password]').value;
+      const lembrar = f.querySelector('input[type=checkbox]').checked; box.remove(); ok({v, lembrar}); };
+  });
+}
+async function carregarDados() {
+  const r = await fetch('prices.enc?t=' + Date.now());
+  if (!r.ok) return (await fetch('prices.json?t=' + Date.now())).json();  // painel sem cifra (ex.: aberto no Mac)
+  const enc = await r.json();
+  let erro = false;
+  for (;;) {
+    if (!senhaPainel) { const s = await pedirSenha(erro); senhaPainel = s.v; if (s.lembrar) lsSet('painel_senha', s.v); }
+    try { return await decifrar(enc, senhaPainel); }
+    catch (e) { erro = true; senhaPainel = null; lsSet('painel_senha', null); }
+  }
+}
+
+async function fetchPrices() {
+  const d = await carregarDados();
+  pricesMeta = d;
+  brPrices = d.br || {};
+  usPrices = d.us || {};
+  usdBrl = d.usdBrl || null;
+  historyData = d.history || {};
+  const desc = a => a.setor ? `Setor: ${a.setor}.` : '';
+  const car = d.carteira || [];
+  DATA.avenue.acoes = car.filter(a => a.grupo === 'acao').map(a => ({...a, descricao: desc(a)}));
+  DATA.avenue.etfs  = car.filter(a => a.grupo === 'etf').map(a => ({...a, descricao: desc(a)}));
+  DATA.avenue.ucits = car.filter(a => a.grupo === 'ucits').map(a => ({...a, descricao: desc(a)}));
+  DATA.brasil = (d.brasil || []).map(b => ({...b, tipo: b.ticker.endsWith('11') ? 'ETF' : 'Ação', descricao: b._confirmar ? 'Confirmar posição — ' + b._confirmar : ''}));
+  DATA.rendaFixa = (d.renda_fixa || []).map(r => ({...r, valorAtual: r.valor_atual, corretora: r.banco, descricao: r.obs || ''}));
+  DATA.crypto = Object.entries(d.cripto || {}).map(([t, c]) => ({ticker: t, ...c}));
+  if (d.updated) {
+    const dt = new Date(d.updated);
+    document.getElementById('ts-prices').textContent = dt.toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' (Brasília)';
+    const horas = (Date.now() - dt.getTime()) / 3.6e6;
+    const avisos = [];
+    if (horas > 26) avisos.push(`⚠️ Dados com ${Math.round(horas)}h de atraso — o monitor do GitHub pode ter parado.`);
+    if (d.usdBrlAntigo) avisos.push('⚠️ Câmbio não atualizado nesta rodada; mostrando o último valor real.');
+    if ((d.sem_preco || []).length) avisos.push('⚠️ Sem preço ao vivo (usando valor do print de ' + d.data_snapshot + '): ' + d.sem_preco.join(', '));
+    const el = document.getElementById('aviso-dados');
+    el.style.display = avisos.length ? 'block' : 'none';
+    el.innerHTML = avisos.join('<br>');
+  }
+}
+
+// ── RENDERERS ─────────────────────────────────────────────────────────────────
+function renderBR() {
+  let totalVal = 0, totalInv = 0;
+  const html = DATA.brasil.map((a, i) => {
+    const p    = brPrices[a.ticker];
+    const cur  = p?.price ?? null;
+    const chg  = p?.chg   ?? null;
+    const inv  = a.qtd * a.pm;
+    const atual = cur ? a.qtd * cur : null;
+    const ret  = atual ? ((atual-inv)/inv)*100 : null;
+    const retR = atual ? atual-inv : null;
+    if (atual) { totalVal += atual; totalInv += inv; }
+    const isPos = ret != null ? ret>=0 : true;
+    const cid = `cm-br-${i}`;
+    return `<div class="acard ${ret!=null?(isPos?'pos':'neg'):'neu'}">
+      <div class="acard-head">
+        <div><div class="ticker">${a.ticker}</div><div class="aname">${a.nome}</div></div>
+        <span class="broker-tag">${a.corretora}</span>
+      </div>
+      <span class="tipo tipo-${a.tipo==='ETF'?'etf':'acao'}">${a.tipo}</span>
+      <div class="rows">
+        <div class="row"><span class="rlabel">Preço atual</span><span class="rval">${cur?R(cur):spin()}</span></div>
+        <div class="row"><span class="rlabel">Variação hoje</span><span class="rval ${chg!=null?cls(chg):''}">${chg!=null?P(chg):spin()}</span></div>
+        <div class="row"><span class="rlabel">Quantidade</span><span class="rval">${a.qtd} cotas</span></div>
+        <div class="row"><span class="rlabel">Preço médio pago</span><span class="rval">${R(a.pm)}</span></div>
+        <div class="row"><span class="rlabel">Total investido</span><span class="rval">${R(inv)}</span></div>
+        <div class="row"><span class="rlabel">Valor atual</span><span class="rval">${atual?R(atual):spin()}</span></div>
+      </div>
+      <div class="rendimento">
+        <div><div class="rendimento-label">Rendimento total</div><div class="rendimento-sub">${retR!=null?R(retR):'---'}</div></div>
+        <div class="rendimento-val ${ret!=null?cls(ret):''}">${ret!=null?P(ret):spin()}</div>
+      </div>
+      <div class="tip">💡 ${a.descricao}</div>
+      <div class="chart-section">
+        <div class="ctabs">
+          <span class="cchg" id="cchg-${cid}"></span>
+          <button class="ctab" onclick="setPeriod('${cid}','1d',this)">24h</button>
+          <button class="ctab on" onclick="setPeriod('${cid}','30d',this)">30d</button>
+          <button class="ctab" onclick="setPeriod('${cid}','1y',this)">12m</button>
+        </div>
+        <div class="cmini"><canvas id="${cid}"></canvas></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('grid-br').innerHTML = html;
+  document.getElementById('tot-br').textContent = totalVal>0 ? R(totalVal) : '---';
+  if (totalVal > 0) {
+    const ganho = totalVal - totalInv;
+    const pct = (ganho/totalInv)*100;
+    const el = document.getElementById('kpi-ganho-br');
+    el.textContent = R(ganho);
+    el.className = 'kpi-value ' + cls(ganho);
+    document.getElementById('kpi-ganho-br-sub').textContent = P(pct) + ' desde a compra';
+  }
+  return totalVal;
+}
+
+function renderAvenueAsset(a, tipo) {
+  const p     = usPrices[a.ticker];
+  const cur   = p?.price ?? null;
+  const chg   = p?.chg   ?? null;
+  const qtd   = a.qtd;
+  const atual = (cur && qtd) ? qtd * cur : a.valor_usd;
+  const inv   = (qtd && a.pm) ? qtd * a.pm : null;
+  const ret   = inv ? ((atual - inv) / inv) * 100 : null;
+  const retR  = inv ? atual - inv : null;
+  const brl   = usdBrl ? atual * usdBrl : null;
+  const isLive = cur !== null;
+  const isPos = ret == null ? true : ret >= 0;
+  const cid   = `cm-av-${a.ticker}`;
+  const rot   = {acao:'Ação', etf:'ETF', ucits:'UCITS'}[tipo];
+  return `<div class="acard ${ret==null?'neu':(isPos?'pos':'neg')}">
+    <div class="acard-head">
+      <div><div class="ticker">${a.ticker} ${isLive?'<span class="live-badge">LIVE</span>':''}</div><div class="aname">${a.nome}</div></div>
+      <span class="broker-tag">Avenue</span>
+    </div>
+    <span class="tipo tipo-${tipo==='acao'?'acao':'etf'}">${rot}</span>
+    ${a.setor?`<span style="font-size:10px;color:var(--muted);margin-left:4px;">${a.setor}</span>`:''}
+    <div class="rows" style="margin-top:10px">
+      <div class="row"><span class="rlabel">Preço atual (USD)</span><span class="rval">${cur?D(cur):'sem preço ao vivo'}</span></div>
+      <div class="row"><span class="rlabel">Variação no dia</span><span class="rval ${chg!=null?cls(chg):''}">${chg!=null?P(chg):'---'}</span></div>
+      <div class="row"><span class="rlabel">Quantidade (calculada)</span><span class="rval">${qtd?qtd.toFixed(4):'---'}</span></div>
+      <div class="row"><span class="rlabel">Preço médio pago</span><span class="rval">${a.pm?D(a.pm):'---'}${a.pm_estimado?' *':''}</span></div>
+      <div class="row"><span class="rlabel">Valor atual (USD)</span><span class="rval">${D(atual)}</span></div>
+      <div class="row"><span class="rlabel">Valor atual (BRL)</span><span class="rval">${brl?R(brl):'---'}</span></div>
+    </div>
+    <div class="rendimento">
+      <div><div class="rendimento-label">Resultado desde a compra</div><div class="rendimento-sub">${retR!=null?D(retR):'---'}</div></div>
+      <div class="rendimento-val ${ret!=null?cls(ret):''}">${ret!=null?P(ret):'---'}</div>
+    </div>
+    ${a.descricao?`<div class="tip">💡 ${a.descricao}</div>`:''}
+    <div class="chart-section">
+      <div class="ctabs">
+        <span class="cchg" id="cchg-${cid}"></span>
+        <button class="ctab" onclick="setPeriod('${cid}','1d',this)">24h</button>
+        <button class="ctab on" onclick="setPeriod('${cid}','30d',this)">30d</button>
+        <button class="ctab" onclick="setPeriod('${cid}','1y',this)">12m</button>
+      </div>
+      <div class="cmini"><canvas id="${cid}"></canvas></div>
+    </div>
+  </div>`;
+}
+
+function valorAtivo(a) {
+  const cur = usPrices[a.ticker]?.price ?? null;
+  return (cur && a.qtd) ? a.qtd * cur : a.valor_usd;
+}
+function custoAtivo(a) { return (a.qtd && a.pm) ? a.qtd * a.pm : valorAtivo(a); }
+
+function renderAvenue() {
+  const grupos = [['acoes','acao','grid-av-ac','tot-av-ac','badge-ac'],
+                  ['etfs','etf','grid-av-etf','tot-av-etf','badge-etf'],
+                  ['ucits','ucits','grid-av-ucits','tot-av-ucits','badge-ucits']];
+  let total = 0, custo = 0;
+  grupos.forEach(([k, tipo, grid, tot, badge]) => {
+    const lista = DATA.avenue[k];
+    document.getElementById(grid).innerHTML = lista.map(a => renderAvenueAsset(a, tipo)).join('');
+    const v = lista.reduce((s,a) => s + valorAtivo(a), 0);
+    total += v; custo += lista.reduce((s,a) => s + custoAtivo(a), 0);
+    document.getElementById(tot).textContent = D(v);
+    document.getElementById(badge).textContent = `${lista.length} ativos`;
+  });
+  const ganho = total - custo;
+  const el = document.getElementById('kpi-ganho-av');
+  el.textContent = D(ganho);
+  el.className = 'kpi-value ' + cls(ganho);
+  document.getElementById('kpi-ganho-av-sub').textContent = P((ganho/custo)*100) + ' desde a compra · total ' + D(total);
+  return total;
+}
+
+function renderSwing() {
+  const sinais = pricesMeta.swing_sinais || [];
+  const abertas = pricesMeta.swing_abertas || [];
+  const cards = [];
+  const sv = pricesMeta.swing_varredura || {}, bloq = sv.bloqueio, bloqB = sv.bloqueio_b;
+  const pl = pricesMeta.swing_placar;
+  if (pl && pl.sinais) cards.push(`<div class="info-box">🧾 Placar ao vivo do robô (operações de mentira desde ${pl.desde.split('-').reverse().join('/')}): `
+    + `${pl.sinais} sinais, ${pl.fechadas} fechados, ${pl.abertas} em andamento, ${pl.nao_executadas||0} não executados (abriram +1% acima). `
+    + (pl.fechadas ? `Acerto ${pl.acerto_pct}% · média ${D(pl.media_usd)} por operação · total ${D(pl.total_usd)}, já com taxas.`
+                   : 'Ainda sem operações fechadas: precisa de pelo menos 30 para tirar conclusão.')
+    + (pl.por_nivel && pl.por_nivel.B && pl.por_nivel.B.sinais ? ` <br>🅱️ Nível B: ${pl.por_nivel.B.sinais} sinais, ${pl.por_nivel.B.fechadas} fechados`
+       + (pl.por_nivel.B.fechadas ? `, média ${D(pl.por_nivel.B.media_usd)}` : '') + '.' : '') + `</div>`);
+  if (bloq) cards.push(`<div class="info-box">⏸️ ${bloqB ? 'Sem operações novas: ' + bloqB : 'Nível A pausado (' + bloq + '). 🅱️ O Nível B ainda tem 1 vaga'}.</div>`);
+  if (typeof sv.amplitude_pct === 'number') cards.push(`<div class="info-box">${sv.amplitude_pct < 40 ? '⚠️' : '📶'} Amplitude do mercado: `
+    + `${sv.amplitude_pct.toFixed(0)}% das 600 ações mais negociadas estão acima da média de 200 dias`
+    + (sv.amplitude_pct < 40 ? ' — fraca: no teste sem viés, o Nível B perdeu dinheiro abaixo de 40%.' : '.') + `</div>`);
+  abertas.forEach(t => cards.push(`<div class="acard ${t.resultado_pct>=0?'pos':'neg'}">
+    <div class="acard-head"><div><div class="ticker">${t.ticker}</div><div class="aname">Operação aberta</div></div><span class="broker-tag">${t.pregoes} pregões</span></div>
+    <div class="rows"><div class="row"><span class="rlabel">Preço atual</span><span class="rval">${D(t.preco)}</span></div>
+    <div class="row"><span class="rlabel">Resultado</span><span class="rval ${cls(t.resultado_pct)}">${P(t.resultado_pct)}</span></div></div></div>`));
+  sinais.forEach(g => cards.push(`<div class="acard pos">
+    <div class="acard-head"><div><div class="ticker">${g.ticker}</div><div class="aname">${g.nivel==='B'?'🅱️ Nível B · ':''}${g.so_placar?'📋 só placar (não comprar) · ':''}${g.setup}</div></div><span class="broker-tag">${g.data}</span></div>
+    <div class="rows">
+      <div class="row"><span class="rlabel">Entrada</span><span class="rval">${D(g.preco)}</span></div>
+      <div class="row"><span class="rlabel">Stop</span><span class="rval neg">${D(g.stop)} (${g.stop_pct}%)</span></div>
+      <div class="row"><span class="rlabel">Alvo</span><span class="rval pos">${D(g.alvo)} (+${g.alvo_pct}%)</span></div>
+      <div class="row"><span class="rlabel">Tamanho</span><span class="rval">${g.qtd_sugerida} ações ≈ ${D(g.valor_usd)}</span></div>
+      <div class="row"><span class="rlabel">Perda máxima</span><span class="rval">${D(g.risco_usd)}</span></div>
+      ${g.cabe_no_limite_eua?'':'<div class="row"><span class="rlabel">⚠️</span><span class="rval neg">Passa do limite EUA</span></div>'}
+      ${(g.spy_dia_pct!=null && g.queda_dia_pct-g.spy_dia_pct<=-4)?`<div class="row"><span class="rlabel">⚠️ Dia</span><span class="rval neg">${g.queda_dia_pct}% vs S&P ${g.spy_dia_pct}% — conferir notícia</span></div>`:''}
+      ${(g.opcoes && g.opcoes.razao>=1.3)?`<div class="row"><span class="rlabel">⚠️ Opções</span><span class="rval neg">caras (±${g.opcoes.mov_esperado_pct}% esperado) — pode haver evento</span></div>`:''}
+      ${g.insiders_90d?`<div class="row"><span class="rlabel">${g.insiders_90d.compras_usd>0?'✅':'➖'} Diretores (90 dias)</span><span class="rval">compraram ${D(g.insiders_90d.compras_usd)} · venderam ${D(g.insiders_90d.vendas_usd)}</span></div>`:''}
+      ${g.nao_cabe_no_caixa?'<div class="row"><span class="rlabel">⏭️</span><span class="rval neg">Não cabe no caixa de swing (1 ação passa do risco ou do tamanho máximo) — pular</span></div>':''}
+    </div><div class="tip">💡 ${g.motivo}</div></div>`));
+  document.getElementById('grid-swing').innerHTML = cards.length ? cards.join('') :
+    '<div class="info-box">Nenhum sinal de swing nesta rodada. Melhor não operar do que forçar uma operação.</div>';
+}
+
+function renderRendaFixa() {
+  const taxaStr = cdiAnual ? cdiAnual.toFixed(2) + '% a.a.' : '---';
+  let totalRF = 0;
+  document.getElementById('grid-rf').innerHTML = DATA.rendaFixa.map(rf => {
+    totalRF += rf.valorAtual;
+    const taxa = cdiAnual ? cdiAnual * (rf.pct_cdi || 100) / 100 : null;
+    const rend30 = taxa ? calcCDB(rf.valorAtual, taxa, 21) - rf.valorAtual : null;
+    const rend365 = taxa ? calcCDB(rf.valorAtual, taxa, 252) - rf.valorAtual : null;
+    return `<div class="acard pos">
+      <div class="acard-head"><div><div class="ticker">CDB <span class="bcb-badge">BCB</span></div><div class="aname">${rf.nome}</div></div><span class="broker-tag">${rf.banco}</span></div>
+      <span class="tipo tipo-cdb">Renda Fixa</span>
+      <div class="rows" style="margin-top:10px">
+        <div class="row"><span class="rlabel">Saldo estimado hoje</span><span class="rval" style="font-size:17px;font-weight:700;color:var(--purple)">${R(rf.valorAtual)}</span></div>
+        <div class="row"><span class="rlabel">Base</span><span class="rval">${R(rf.valor)} em ${rf.data_base.split('-').reverse().join('/')}</span></div>
+        <div class="row"><span class="rlabel">Rentabilidade</span><span class="rval">${rf.pct_cdi}% do CDI (CDI ${taxaStr})</span></div>
+        <div class="row"><span class="rlabel">Rende em 30 dias (bruto)</span><span class="rval">${rend30?'+'+R(rend30):'---'}</span></div>
+        <div class="row"><span class="rlabel">Rende em 12 meses (bruto)</span><span class="rval">${rend365?'+'+R(rend365):'---'}</span></div>
+      </div>
+      ${rf.descricao?`<div class="tip">💡 ${rf.descricao}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('tot-rf').textContent = R(totalRF);
+  document.getElementById('kpi-rf').textContent = R(totalRF);
+  document.getElementById('kpi-rf-sub').textContent = cdiAnual ? `CDB · CDI ${cdiAnual.toFixed(2)}% a.a. (Banco Central)` : 'CDB · CDI indisponível agora';
+  return totalRF;
+}
+
+function renderCrypto() {
+  let total = 0;
+  document.getElementById('grid-crypto').innerHTML = DATA.crypto.map(c => {
+    const v = c.valor_brl;
+    if (v) total += v;
+    return `<div class="acard ${(c.chg24h||0)>=0?'pos':'neg'}">
+      <div class="acard-head"><div><div class="ticker">${c.ticker} <span class="live-badge">LIVE</span></div><div class="aname">Exposição via Itaú/íon</div></div><span class="broker-tag">Itaú</span></div>
+      <span class="tipo tipo-cripto">Cripto</span>
+      <div class="rows" style="margin-top:10px">
+        <div class="row"><span class="rlabel">Preço (BRL)</span><span class="rval">${R(c.price_brl)}</span></div>
+        <div class="row"><span class="rlabel">Variação 24h</span><span class="rval ${cls(c.chg24h||0)}">${P(c.chg24h)}</span></div>
+        <div class="row"><span class="rlabel">Valor estimado</span><span class="rval">${v?R(v):'---'}</span></div>
+      </div></div>`;
+  }).join('');
+  document.getElementById('tot-crypto').textContent = R(total);
+  return total;
+}
+
+// ── MINI CHARTS ───────────────────────────────────────────────────────────────
+function drawChart(cid, pts, currency) {
+  if (!pts || !pts.length) return;
+  const canvas = document.getElementById(cid);
+  if (!canvas) return;
+  if (cardCharts[cid]) { try { cardCharts[cid].destroy(); } catch(e) {} delete cardCharts[cid]; }
+
+  const prices = pts.map(p => p[1]);
+  const first  = prices[0], last = prices[prices.length - 1];
+  const up     = last >= first;
+  const color  = up ? '#3fb950' : '#f85149';
+  const pct    = ((last - first) / first * 100).toFixed(2);
+
+  const chgEl = document.getElementById('cchg-' + cid);
+  if (chgEl) { chgEl.textContent = (up?'+':'') + pct + '%'; chgEl.className = 'cchg ' + (up?'pos':'neg'); }
+
+  cardCharts[cid] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: pts.map(p => p[0]),
+      datasets: [{
+        data: prices,
+        borderColor: color,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: up ? 'rgba(63,185,80,.07)' : 'rgba(248,81,73,.07)',
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => currency === 'BRL' ? R(ctx.raw) : D(ctx.raw),
+            title: ctx => new Date(pts[ctx[0].dataIndex][0]).toLocaleDateString('pt-BR')
+          }
+        }
+      },
+      scales: { x: { display: false }, y: { display: false } },
+      interaction: { intersect: false, mode: 'index' }
+    }
+  });
+}
+
+function setPeriod(cid, period, btn) {
+  const h = allHist[cid];
+  if (!h || !h[period] || !h[period].length) return;
+  drawChart(cid, h[period], h._currency);
+  btn.parentElement.querySelectorAll('.ctab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function fetchCryptoHist(coinId) {
+  const hist = {};
+  for (const [key, days] of [['1d',1],['30d',30],['1y',365]]) {
+    try {
+      const r = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=brl&days=${days}`);
+      const d = await r.json();
+      hist[key] = (d.prices || []);
+    } catch(e) { hist[key] = []; }
+  }
+  return hist;
+}
+
+async function initAllMiniCharts() {
+  DATA.brasil.forEach((a, i) => {
+    const cid = `cm-br-${i}`;
+    const h = historyData[a.ticker];
+    if (h && h['30d'] && h['30d'].length) {
+      allHist[cid] = { ...h, _currency: 'BRL' };
+      drawChart(cid, h['30d'], 'BRL');
+    }
+  });
+
+  [...DATA.avenue.acoes, ...DATA.avenue.etfs, ...DATA.avenue.ucits].forEach(a => {
+    const cid = `cm-av-${a.ticker}`;
+    const h = historyData[a.ticker];
+    if (h && h['30d'] && h['30d'].length) {
+      allHist[cid] = { ...h, _currency: 'USD' };
+      drawChart(cid, h['30d'], 'USD');
+    }
+  });
+
+}
+
+function renderKPIs(brTotal, avUSD, cryptoTotal, rfTotal) {
+  const avBRL = usdBrl ? avUSD * usdBrl : 0;
+  const rv    = brTotal + avBRL + cryptoTotal;
+  document.getElementById('kpi-total').textContent = R(rv + rfTotal);
+  document.getElementById('kpi-rv').textContent    = R(rv);
+  document.getElementById('kpi-usd').textContent   = usdBrl ? 'R$ ' + usdBrl.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4}) : 'indisponível';
+  document.getElementById('kpi-usd-sub').textContent = pricesMeta.usdBrlFonte ? 'Fonte: ' + pricesMeta.usdBrlFonte : '';
+  const lim = pricesMeta.limite_eua;
+  if (lim) {
+    document.getElementById('kpi-limite').textContent = D(lim.total_usd);
+    document.getElementById('kpi-limite-sub').textContent = `de ${D(lim.limite_usd)} · espaço ${D(lim.espaco_usd)}`;
+  }
+  const ef = pricesMeta.eficiencia;
+  if (ef && ef.tecnologia_ia_pct != null) {
+    const el = document.getElementById('eficiencia');
+    el.style.display = '';
+    el.innerHTML = `🔬 Raio-X da carteira (${ef.data.split('-').reverse().join('/')}): tecnologia/IA ${ef.tecnologia_ia_pct.toFixed(0)}% `
+      + `(contando o que há dentro dos ETFs) · ações individuais são ${ef.acoes_peso_pct.toFixed(0)}% do dinheiro e `
+      + `${ef.acoes_risco_pct.toFixed(0)}% do risco · prejuízo não realizado ${D(ef.prejuizo_nao_realizado_usd)} `
+      + `(pode abater ganhos no IR deste ano e dos próximos).`;
+    if (ef.proximo_aporte_10k) el.innerHTML += `<br>🧭 Próximo aporte (a cada US$ 10 mil, para chegar ao alvo do plano): `
+      + Object.entries(ef.proximo_aporte_10k).map(([t,v]) => `${t} ${D(v)}`).join(' · ');
+  }
+  const g = pricesMeta.gatilhos && pricesMeta.gatilhos['S&P 500'];
+  if (g) {
+    const el = document.getElementById('kpi-gatilho');
+    el.textContent = P(g.queda_do_topo_pct);
+    el.className = 'kpi-value ' + (g.queda_do_topo_pct <= -10 ? 'neg' : '');
+  }
+  document.getElementById('ts').textContent = new Date().toLocaleTimeString('pt-BR');
+  renderCharts(brTotal, avBRL, rfTotal, cryptoTotal);
+}
+
+function renderCharts(br, av, rf, crypto) {
+  if (charts.tipo) charts.tipo.destroy();
+  if (charts.corr) charts.corr.destroy();
+  const mkChart = (id, labels, data, colors) => new Chart(document.getElementById(id), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderColor:'#1c2128', borderWidth:3, hoverOffset:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ position:'bottom', labels:{ color:'#8b949e', font:{size:11}, padding:12, boxWidth:12 }},
+        tooltip:{ callbacks:{ label:ctx => { const t = ctx.dataset.data.reduce((a,b)=>a+b,0); return ` ${R(ctx.raw)}  (${((ctx.raw/t)*100).toFixed(1)}%)`; }}}}}
+  });
+  charts.tipo = mkChart('chartTipo', ['Ações Brasil','Avenue (EUA + UCITS)','Renda Fixa','Cripto'], [br, av, rf, crypto], ['#58a6ff','#3fb950','#bc8cff','#d29922']);
+  const banco = n => DATA.rendaFixa.filter(r => r.banco === n).reduce((s,r)=>s+r.valorAtual,0);
+  charts.corr = mkChart('chartCorr', ['Itaú (CDB + cripto)','Santander','Neon','Avenue','B3'],
+    [banco('Itaú') + crypto, banco('Santander'), banco('Neon'), av, br], ['#d29922','#f85149','#bc8cff','#3fb950','#58a6ff']);
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('ts').innerHTML = spin();
+  // CDI e dados de mercado em paralelo
+  await Promise.all([fetchCDI(), fetchPrices()]);
+  const brTotal     = renderBR();
+  const avUSD       = renderAvenue();
+  const cryptoTotal = renderCrypto();
+  const rfTotal     = renderRendaFixa();   // usa cdiAnual já preenchido
+  renderSwing();
+  renderKPIs(brTotal, avUSD, cryptoTotal, rfTotal);
+  await initAllMiniCharts();
+}
+
+init();
+setInterval(init, 60000);
+</script>
+</body>
+</html>
